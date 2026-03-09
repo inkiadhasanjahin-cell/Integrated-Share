@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrated Share · Sign in</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-body">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="auth-logo-icon"><i class="fas fa-share-nodes"></i></div>
+            <div>
+                <div class="auth-logo-name">Integrated Share</div>
+                <div class="auth-logo-sub">RUET Campus Network</div>
+            </div>
+        </div>
+
+        <h2 class="auth-heading">Welcome back</h2>
+        <p class="auth-subheading">Sign in to your account to continue</p>
+
+        {% if error %}
+        <div class="auth-error"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/login" class="auth-form">
+            <div class="input-wrap">
+                <i class="fas fa-user input-icon"></i>
+                <input type="text" name="username" placeholder="Username" required autofocus autocomplete="username">
+            </div>
+            <div class="input-wrap">
+                <i class="fas fa-lock input-icon"></i>
+                <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="auth-btn">Sign in</button>
+        </form>
+
+        <p class="auth-switch">No account? <a href="/register">Create one</a></p>
+    </div>
+</body>
+</html>
