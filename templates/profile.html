@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrated Share · Profile</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="admin-body">
+<div class="admin-wrap profile-wrap">
+    <div class="admin-topbar">
+        <div class="admin-topbar-left">
+            <div class="admin-brand"><img src="{{ url_for('static', filename='images/Logo.png') }}" alt="Integrated Share" class="admin-brand-logo"> Profile</div>
+            <a href="/" class="admin-back"><i class="fas fa-arrow-left"></i> Back to app</a>
+        </div>
+        <div class="admin-topbar-right">
+            <div class="user-avatar" id="profileTopAvatar" title="Profile">
+                <img id="profileTopAvatarImg" alt="Profile image" style="display:none;">
+                <span id="profileTopAvatarInitial">?</span>
+            </div>
+            <span id="profileTopUsername" class="profile-top-username">{{ username }}</span>
+        </div>
+    </div>
+
+    <div class="profile-stack">
+        <div class="profile-card">
+            <h3 class="profile-section-title">Profile picture</h3>
+            <div class="profile-avatar-wrap">
+                <img id="profileAvatar" class="profile-avatar" alt="Profile">
+            </div>
+            <div class="profile-form">
+                <div class="profile-field">
+                    <label for="profileImageInput" class="profile-field-label">Profile image</label>
+                    <input type="file" id="profileImageInput" accept="image/*">
+                </div>
+            </div>
+            <div class="profile-actions">
+                <button class="btn-cancel" id="removeProfileBtn"><i class="fas fa-user-minus"></i> Remove profile picture</button>
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <h3 class="profile-section-title">Profile details</h3>
+            <div class="profile-readonly-list">
+                <div class="profile-readonly-item">
+                    <div class="profile-field-label">Username</div>
+                    <div class="profile-field-value" id="pUsername">-</div>
+                </div>
+                <div class="profile-readonly-item">
+                    <div class="profile-field-label">Email</div>
+                    <div class="profile-field-value" id="pEmail">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <h3 class="profile-section-title">Edit or set information</h3>
+            <div class="profile-form">
+                <div class="profile-field">
+                    <label for="pFullName" class="profile-field-label">Full name</label>
+                    <input id="pFullName" type="text" autocomplete="name">
+                </div>
+                <div class="profile-field">
+                    <label for="pDob" class="profile-field-label">Date of birth</label>
+                    <input id="pDob" type="date">
+                </div>
+                <div class="profile-field">
+                    <label for="pSeries" class="profile-field-label">Academic series</label>
+                    <input id="pSeries" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="23">
+                </div>
+                <div class="profile-field">
+                    <label for="pDept" class="profile-field-label">Department</label>
+                    <select id="pDept">
+                        <option value="">Select department</option>
+                        <option value="EEE">EEE</option>
+                        <option value="CSE">CSE</option>
+                        <option value="ETE">ETE</option>
+                        <option value="ECE">ECE</option>
+                        <option value="CE">CE</option>
+                        <option value="URP">URP</option>
+                        <option value="Arch">Arch</option>
+                        <option value="BECM">BECM</option>
+                        <option value="ME">ME</option>
+                        <option value="IPE">IPE</option>
+                        <option value="CME">CME</option>
+                        <option value="MTE">MTE</option>
+                        <option value="MSE">MSE</option>
+                        <option value="ChE">ChE</option>
+                    </select>
+                </div>
+            </div>
+            <div class="profile-actions">
+                <button class="btn-primary" id="saveProfileBtn"><i class="fas fa-save"></i> Save changes</button>
+            </div>
+            <div id="profileMsg" class="profile-msg"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const ALLOWED_DEPARTMENTS = new Set(['EEE','CSE','ETE','ECE','CE','URP','Arch','BECM','ME','IPE','CME','MTE','MSE','ChE']);
+
+function msg(t, ok=true){ const el=document.getElementById('profileMsg'); el.textContent=t; el.style.color=ok?'#137333':'#B31412'; }
+
+function buildProfileFormData(removeImage=false){
+    const fd = new FormData();
+    fd.append('full_name', pFullName.value.trim());
+    fd.append('dob', pDob.value);
+    fd.append('academic_series', pSeries.value.trim());
+    fd.append('department', pDept.value.trim());
+    if(removeImage) fd.append('remove_profile_image', '1');
+    if(profileImageInput.files[0]) fd.append('profile_image', profileImageInput.files[0]);
+    return fd;
+}
+
+function validateProfileInputs(){
+    const series = pSeries.value.trim();
+    if(series && !/^\d+$/.test(series)){
+        msg('Academic series must be numeric', false);
+        return false;
+    }
+    const dept = pDept.value.trim();
+    if(dept && !ALLOWED_DEPARTMENTS.has(dept)){
+        msg('Please select a valid department', false);
+        return false;
+    }
+    return true;
+}
+
+async function loadProfile(){
+    const r = await fetch(`${API}/api/profile`);
+    if(!r.ok){ window.location.href='/login'; return; }
+    const p = await r.json();
+    const topInitial = (p.username || '?').charAt(0).toUpperCase();
+    pUsername.textContent = p.username || '-';
+    pEmail.textContent = p.email || '-';
+    profileTopUsername.textContent = p.username || '{{ username }}';
+    pFullName.value = p.full_name || '';
+    pDob.value = p.dob || '';
+    pSeries.value = p.academic_series || '';
+    const dept = p.department || '';
+    pDept.value = ALLOWED_DEPARTMENTS.has(dept) ? dept : '';
+    if (p.profile_image_url) {
+        profileAvatar.src = p.profile_image_url;
+        profileTopAvatarImg.src = p.profile_image_url;
+        profileTopAvatarImg.style.display = 'block';
+        profileTopAvatarInitial.style.display = 'none';
+    } else {
+        profileAvatar.src = "{{ url_for('static', filename='images/Logo.png') }}";
+        profileTopAvatarImg.style.display = 'none';
+        profileTopAvatarInitial.style.display = 'inline-flex';
+        profileTopAvatarInitial.textContent = topInitial;
+    }
+}
+
+saveProfileBtn.onclick = async () => {
+    if(!validateProfileInputs()) return;
+    const r = await fetch(`${API}/api/profile`, { method:'POST', body: buildProfileFormData(false) });
+    const d = await r.json();
+    if(r.ok && d.success){ msg('Profile updated successfully', true); loadProfile(); }
+    else msg(d.error || 'Failed to update profile', false);
+};
+
+removeProfileBtn.onclick = async () => {
+    if(!validateProfileInputs()) return;
+    const r = await fetch(`${API}/api/profile`, { method:'POST', body: buildProfileFormData(true) });
+    const d = await r.json();
+    if(r.ok && d.success){
+        profileImageInput.value = '';
+        msg('Profile picture removed', true);
+        loadProfile();
+    } else {
+        msg(d.error || 'Failed to remove profile picture', false);
+    }
+};
+
+profileImageInput.addEventListener('change', () => {
+    const f = profileImageInput.files[0];
+    if(!f) return;
+    const u = URL.createObjectURL(f);
+    profileAvatar.src = u;
+});
+
+loadProfile();
+</script>
+</body>
+</html>
