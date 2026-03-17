@@ -61,13 +61,25 @@ ok "Runtime directories ensured."
 
 # Install dependencies directly (no venv)
 info "Installing Python dependencies..."
-if pip3 install -r "${TARGET_DIR}/requirements.txt"; then
+PIP_LOG="$(mktemp)"
+if pip3 install -r "${TARGET_DIR}/requirements.txt" 2>&1 | tee "${PIP_LOG}"; then
   ok "Dependencies installed."
-elif pip3 install --break-system-packages -r "${TARGET_DIR}/requirements.txt"; then
+elif pip3 install --break-system-packages -r "${TARGET_DIR}/requirements.txt" 2>&1 | tee "${PIP_LOG}"; then
   ok "Dependencies installed with --break-system-packages."
 else
-  fail "Could not install Python dependencies."
+  info "pip3 install failed, trying distro packages fallback..."
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -y
+    apt-get install -y python3-flask python3-flask-cors python3-flask-sqlalchemy python3-werkzeug gunicorn
+    ok "Dependencies installed via apt fallback."
+  else
+    echo -e "${RED}Last pip output:${NC}"
+    tail -n 20 "${PIP_LOG}" || true
+    rm -f "${PIP_LOG}" || true
+    fail "Could not install Python dependencies (pip3 and apt fallback unavailable)."
+  fi
 fi
+rm -f "${PIP_LOG}" || true
 
 # Set ownership and permissions
 info "Applying ownership and permissions..."
